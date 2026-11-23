@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="it" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Torteria — Tè, Tisane e Infusi</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Playfair Display + Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Playfair Display"', 'Georgia', 'serif'],
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        ivory: {
+                            50: '#FAF6F0',
+                            100: '#F4EDE2',
+                            200: '#E8DEC8',
+                            300: '#D8C9AC',
+                        },
+                        burgundy: {
+                            700: '#782230',
+                            800: '#5C1A24',
+                            900: '#3B0D14',
+                        },
+                        pine: {
+                            50: '#EEF4F0',
+                            100: '#D8E5DD',
+                            700: '#264F36',
+                            800: '#1E3F2B',
+                            900: '#142B1D',
+                        },
+                        gold: {
+                            100: '#F9F1DF',
+                            200: '#F0DFB8',
+                            400: '#D9B15B',
+                            500: '#C89B3C',
+                            600: '#A87F2A',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-ivory-50 text-burgundy-900 font-sans antialiased selection:bg-gold-200 selection:text-burgundy-900 min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Canvas leggero per neve e scintille dorate natalizie -->
+    <canvas id="snow-canvas" class="fixed inset-0 pointer-events-none z-20"></canvas>
+
+    <!-- ==================== HEADER ==================== -->
+    <header class="sticky top-0 z-30 bg-burgundy-900/95 backdrop-blur-md border-b border-gold-500/30 text-ivory-50 shadow-md">
+        <div class="max-w-5xl mx-auto px-3.5 sm:px-6 h-12 sm:h-16 flex items-center justify-between">
+            <!-- Logo & Titolo Locale -->
+            <a href="#" class="flex items-center gap-2 sm:gap-2.5 group">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-burgundy-800 border border-gold-500/60 text-gold-400 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                    <i class="ph-fill ph-cake text-base sm:text-lg"></i>
+                </div>
+                <div>
+                    <span id="header-bar-name" class="font-serif text-lg sm:text-2xl font-bold tracking-tight text-ivory-50 block leading-none">La Torteria</span>
+                    <span class="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-gold-400 font-semibold mt-0.5 block">Sala da Tè</span>
+                </div>
+            </a>
+        </div>
+    </header>
+
+    <!-- ==================== BANNER MODALITÀ GESTIONE (Attivabile dal footer) ==================== -->
+    <div id="admin-banner" class="hidden sticky top-12 sm:top-16 z-30 bg-pine-900/95 backdrop-blur-md text-ivory-50 border-b border-gold-500/40 shadow-lg">
+        <div class="max-w-5xl mx-auto px-3.5 sm:px-6 py-2.5 sm:py-3 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2.5">
+            <div class="flex items-center justify-between w-full lg:w-auto gap-2">
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-full bg-gold-500 text-burgundy-900 text-[10px] font-bold uppercase tracking-wider shrink-0">Area Gestione</span>
+                    <p class="text-xs text-ivory-100 hidden sm:block">Tocca una scheda per modificarla o cambia i prezzi al volo.</p>
+                </div>
+                <button onclick="toggleAdminMode()" class="lg:hidden px-2.5 py-1 rounded-lg bg-burgundy-800 active:bg-burgundy-700 text-ivory-50 text-xs font-semibold">
+                    Chiudi
+                </button>
+            </div>
+            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full lg:w-auto">
+                <button onclick="openEditModal()" class="inline-flex items-center justify-center gap-1 min-h-[34px] px-3 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-400 active:scale-95 text-burgundy-900 text-xs font-bold transition-all shadow-sm whitespace-nowrap shrink-0">
+                    <i class="ph-bold ph-plus"></i> Aggiungi
+                </button>
+                <button onclick="openBarSettingsModal()" class="inline-flex items-center justify-center gap-1 min-h-[34px] px-2.5 py-1.5 rounded-lg bg-pine-800 hover:bg-pine-700 active:scale-95 text-ivory-50 text-xs font-medium transition-all border border-gold-500/30 whitespace-nowrap shrink-0">
+                    <i class="ph ph-storefront"></i> Info Locale
+                </button>
+                <button onclick="exportMenuJSON()" title="Esporta backup JSON" class="inline-flex items-center gap-1 min-h-[34px] px-2.5 py-1.5 rounded-lg bg-pine-800 hover:bg-pine-700 text-ivory-100 text-xs border border-gold-500/30 whitespace-nowrap shrink-0">
+                    <i class="ph ph-download-simple text-sm"></i> Esporta
+                </button>
+                <label title="Importa backup JSON" class="cursor-pointer inline-flex items-center gap-1 min-h-[34px] px-2.5 py-1.5 rounded-lg bg-pine-800 hover:bg-pine-700 text-ivory-100 text-xs border border-gold-500/30 whitespace-nowrap shrink-0">
+                    <i class="ph ph-upload-simple text-sm"></i> Importa
+                    <input type="file" accept=".json" onchange="importMenuJSON(event)" class="hidden">
+                </label>
+                <button onclick="confirmResetMenu()" title="Ripristina 30 referenze originali" class="min-h-[34px] min-w-[34px] flex items-center justify-center rounded-lg bg-pine-800 hover:bg-burgundy-800 text-ivory-200 border border-gold-500/30 shrink-0" aria-label="Ripristina predefiniti">
+                    <i class="ph ph-arrow-counter-clockwise text-sm"></i>
+                </button>
+                <button onclick="toggleAdminMode()" class="hidden lg:inline-flex px-3 py-1.5 rounded-lg bg-burgundy-800 hover:bg-burgundy-700 text-ivory-50 text-xs font-semibold">
+                    Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== HERO SECTION NATALIZIA ==================== -->
+    <section class="relative overflow-hidden bg-gradient-to-b from-burgundy-900 via-burgundy-800 to-burgundy-900 text-ivory-50 pt-14 pb-16 sm:pt-20 sm:pb-24 border-b-2 border-gold-500/40">
+        <!-- Bagliori caldi decorativi -->
+        <div class="absolute -top-24 -right-24 w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-gold-500/15 blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-pine-800/50 blur-3xl pointer-events-none"></div>
+
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center relative z-10">
+            
+            
+            <h1 id="hero-title" class="font-serif text-2xl sm:text-4xl md:text-5xl font-bold text-ivory-50 leading-tight mb-4 sm:mb-5">
+                Il calore delle feste in ogni tazza
+            </h1>
+            
+            <p id="hero-subtitle" class="text-xs sm:text-base text-ivory-200/90 max-w-xl mx-auto mb-7 sm:mb-9 leading-relaxed">
+                30 pregiati tè in foglia, tisane officinali e infusi alla frutta, serviti fumanti per accompagnare le nostre torte artigianali.
+            </p>
+
+            <div class="flex items-center justify-center">
+                <a href="#carta-tisane" class="inline-flex items-center justify-center gap-2 px-6 py-3 sm:px-7 sm:py-3.5 rounded-full bg-gold-500 hover:bg-gold-400 active:scale-[0.98] text-burgundy-900 text-xs sm:text-sm font-bold shadow-md shadow-black/25 transition-all">
+                    <span>Sfoglia la Carta</span>
+                    <i class="ph-bold ph-arrow-down"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SEZIONE PRINCIPALE: FILTRI E MENU ==================== -->
+    <main id="carta-tisane" class="flex-grow max-w-5xl w-full mx-auto px-3.5 sm:px-6 pt-4 pb-10 sm:py-10 relative z-10">
+        
+        <!-- Intestazione Sezione -->
+        <div class="mb-3 sm:mb-5">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-pine-800 block mb-0.5">La Selezione di La Torteria</span>
+            <h2 class="font-serif text-xl sm:text-3xl font-bold text-burgundy-900">Tè, Tisane & Infusi</h2>
+            <p class="text-[11px] sm:text-xs text-burgundy-900/70 mt-0.5">Serviti in teiera con clessidra d'infusione e miele millefiori su richiesta.</p>
+        </div>
+
+        <!-- Barra Sticky di Ricerca & Filtri Compatta -->
+        <div class="sticky top-12 sm:top-16 z-20 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 py-2 bg-ivory-50/95 backdrop-blur-md border-b border-ivory-200/80 mb-3.5 transition-all">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                <!-- Barra di Ricerca -->
+                <div class="relative w-full md:w-72 order-1 md:order-2 shrink-0">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-burgundy-800/55 text-base"></i>
+                    <input 
+                        type="search" 
+                        id="search-input" 
+                        placeholder="Cerca tè, frutta, spezie..." 
+                        oninput="handleSearch(this.value)"
+                        class="w-full pl-9 pr-9 py-1.5 rounded-full bg-white border border-ivory-300 focus:border-burgundy-800 focus:ring-2 focus:ring-gold-500/30 outline-none text-sm transition-all shadow-sm"
+                    >
+                    <button id="clear-search" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-burgundy-800/60 hover:text-burgundy-900" aria-label="Cancella ricerca">
+                        <i class="ph-fill ph-x-circle text-base"></i>
+                    </button>
+                </div>
+
+                <!-- Barra Filtri per Categoria scorrevole orizzontalmente -->
+                <div id="category-filters" class="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar order-2 md:order-1">
+                    <!-- Popolata dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra Contatore & Filtro Senza Teina -->
+        <div class="flex items-center justify-between gap-2 mb-3.5 text-[11px] sm:text-xs text-burgundy-900/75">
+            <span id="results-count" class="font-medium">Mostrando 30 referenze</span>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none min-h-[30px] px-2.5 py-1 rounded-full bg-pine-50 border border-pine-200 text-pine-800 font-semibold active:scale-95 hover:bg-pine-100/70 transition-all">
+                <input type="checkbox" id="filter-caffeine-free" onchange="renderMenu()" class="rounded border-pine-700 text-pine-800 focus:ring-pine-700 w-3.5 h-3.5">
+                <span>Solo Senza Teina</span>
+            </label>
+        </div>
+
+        <!-- Griglia Schede -->
+        <div id="tea-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <!-- Popolata dinamicamente -->
+        </div>
+
+        <!-- Stato Vuoto -->
+        <div id="empty-state" class="hidden text-center py-10 px-4 bg-ivory-100/80 rounded-2xl border border-ivory-300">
+            <div class="w-12 h-12 rounded-full bg-burgundy-800/10 text-burgundy-800 flex items-center justify-center mx-auto mb-3">
+                <i class="ph ph-tea-bag text-2xl"></i>
+            </div>
+            <h3 class="font-serif text-lg sm:text-xl font-bold text-burgundy-900 mb-1.5">Nessuna infusione trovata</h3>
+            <p class="text-xs text-burgundy-900/70 max-w-md mx-auto mb-4">Prova a cambiare categoria o a cercare un altro ingrediente nella lista.</p>
+            <button onclick="resetAllFilters()" class="px-5 py-2 rounded-full bg-burgundy-800 text-ivory-50 text-xs font-semibold hover:bg-burgundy-900 active:scale-95 transition-all">
+                Mostra tutte le 30 referenze
+            </button>
+        </div>
+    </main>
+
+    <!-- ==================== PULSANTE RAPIDO IN BASSO (Solo in Area Gestione su Mobile) ==================== -->
+    <button id="mobile-fab-add" onclick="openEditModal()" class="hidden fixed bottom-5 right-5 z-30 md:hidden w-14 h-14 rounded-full bg-gold-500 text-burgundy-900 shadow-xl shadow-burgundy-900/30 border-2 border-burgundy-900/15 items-center justify-center active:scale-90 transition-transform" aria-label="Aggiungi nuova referenza">
+        <i class="ph-bold ph-plus text-2xl"></i>
+    </button>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-burgundy-900 text-ivory-100 border-t-2 border-gold-500/40 mt-12 relative z-10 overflow-hidden">
+        <!-- Bagliore decorativo centrale -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(200,155,60,0.12)_0%,_transparent_70%)] pointer-events-none"></div>
+
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-8 relative z-10">
+            <!-- Grande Illustrazione Torta & Teiera Fumante -->
+            <div class="flex flex-col items-center justify-center pb-8 border-b border-gold-500/20">
+                <svg viewBox="0 0 420 230" class="w-full max-w-[320px] sm:max-w-[380px] h-auto drop-shadow-2xl" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Torta artigianale e teiera fumante">
+                    <defs>
+                        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#F0DFB8"/>
+                            <stop offset="50%" stop-color="#D9B15B"/>
+                            <stop offset="100%" stop-color="#A87F2A"/>
+                        </linearGradient>
+                        <linearGradient id="cakeBody" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#FAF6F0"/>
+                            <stop offset="100%" stop-color="#E8DEC8"/>
+                        </linearGradient>
+                        <linearGradient id="teapotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#782230"/>
+                            <stop offset="100%" stop-color="#4A111A"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Tavolo / Linea d'appoggio dorata -->
+                    <ellipse cx="210" cy="204" rx="185" ry="10" fill="#26070C" opacity="0.65"/>
+                    <line x1="35" y1="202" x2="385" y2="202" stroke="url(#goldGrad)" stroke-width="1.5" stroke-opacity="0.5"/>
+
+                    <!-- Vapore profumato sopra la teiera -->
+                    <path d="M298 68 C292 54, 306 44, 299 30" stroke="url(#goldGrad)" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+                    <path d="M312 72 C318 58, 304 48, 311 34" stroke="#FAF6F0" stroke-width="1.6" stroke-linecap="round" opacity="0.4"/>
+                    <path d="M368 118 C364 108, 374 101, 369 91" stroke="#FAF6F0" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
+
+                    <!-- ================= TORTA SU ALZATINA (Sinistra/Centro) ================= -->
+                    <!-- Base alzatina -->
+                    <path d="M108 201 L172 201 L154 188 L126 188 Z" fill="url(#goldGrad)"/>
+                    <rect x="133" y="166" width="14" height="23" rx="3" fill="url(#goldGrad)"/>
+                    <!-- Piatto alzatina -->
+                    <rect x="64" y="160" width="152" height="7" rx="3.5" fill="url(#goldGrad)"/>
+
+                    <!-- Corpo torta (2 strati) -->
+                    <rect x="78" y="102" width="124" height="58" rx="8" fill="url(#cakeBody)" stroke="url(#goldGrad)" stroke-width="1.5"/>
+                    <!-- Ripieno centrale crema/frutti di bosco -->
+                    <rect x="78" y="128" width="124" height="7" fill="#782230"/>
+                    <rect x="78" y="135" width="124" height="4" fill="#D9B15B" opacity="0.7"/>
+
+                    <!-- Glassa colante superiore -->
+                    <path d="M77 104 C77 98, 83 96, 90 96 L190 96 C197 96, 203 98, 203 104 L203 114 C203 119, 195 119, 195 113 C195 108, 187 108, 187 116 C187 122, 178 122, 178 114 C178 108, 168 108, 168 118 C168 124, 159 124, 159 115 C159 108, 148 108, 148 113 C148 118, 139 118, 139 112 C139 107, 128 107, 128 117 C128 123, 119 123, 119 114 C119 108, 108 108, 108 115 C108 120, 99 120, 99 113 C99 108, 90 108, 90 116 C90 121, 77 120, 77 113 Z" fill="#FAF6F0"/>
+
+                    <!-- Decorazioni natalizie sulla torta: Agrifoglio & Bacche -->
+                    <path d="M140 94 C130 84, 116 86, 112 94 C121 97, 131 97, 140 94 Z" fill="#264F36"/>
+                    <path d="M140 94 C150 84, 164 86, 168 94 C159 97, 149 97, 140 94 Z" fill="#264F36"/>
+                    <circle cx="140" cy="92" r="5" fill="#9E2A3B"/>
+                    <circle cx="133" cy="95" r="4" fill="#782230"/>
+                    <circle cx="147" cy="95" r="4" fill="#782230"/>
+                    <circle cx="139" cy="90" r="1.4" fill="#FAF6F0" opacity="0.8"/>
+
+                    <!-- Stellina dorata sopra la torta -->
+                    <path d="M140 66 L142.5 73 L150 73.5 L144 78 L146 85 L140 81 L134 85 L136 78 L130 73.5 L137.5 73 Z" fill="url(#goldGrad)"/>
+
+                    <!-- ================= TEIERA IN PORCELLANA (Destra) ================= -->
+                    <!-- Manico teiera -->
+                    <path d="M332 126 C356 122, 358 164, 330 168" stroke="url(#goldGrad)" stroke-width="5" stroke-linecap="round" fill="none"/>
+                    <!-- Beccuccio teiera -->
+                    <path d="M268 158 C246 154, 242 132, 232 126 C229 124, 233 120, 238 122 C250 128, 254 142, 270 144 Z" fill="url(#teapotGrad)" stroke="url(#goldGrad)" stroke-width="1.5"/>
+                    <!-- Corpo teiera -->
+                    <ellipse cx="302" cy="154" rx="38" ry="34" fill="url(#teapotGrad)" stroke="url(#goldGrad)" stroke-width="2"/>
+                    <!-- Fascia dorata decorativa sulla teiera -->
+                    <path d="M266 148 Q302 158 338 148" stroke="url(#goldGrad)" stroke-width="1.8" fill="none"/>
+                    <path d="M268 164 Q302 174 336 164" stroke="url(#goldGrad)" stroke-width="1.2" stroke-dasharray="3 3" fill="none"/>
+                    <!-- Base teiera -->
+                    <rect x="282" y="185" width="40" height="6" rx="3" fill="url(#goldGrad)"/>
+                    <!-- Coperchio teiera -->
+                    <path d="M278 123 C284 114, 320 114, 326 123 Z" fill="url(#teapotGrad)" stroke="url(#goldGrad)" stroke-width="1.5"/>
+                    <circle cx="302" cy="111" r="5" fill="url(#goldGrad)"/>
+
+                    <!-- ================= TAZZA DA TÈ CON PIATTINO (Estrema destra) ================= -->
+                    <!-- Piattino -->
+                    <ellipse cx="368" cy="197" rx="28" ry="4.5" fill="url(#goldGrad)"/>
+                    <!-- Manico tazza -->
+                    <path d="M385 170 C396 170, 396 186, 384 186" stroke="url(#goldGrad)" stroke-width="3" fill="none"/>
+                    <!-- Tazza -->
+                    <path d="M350 165 L386 165 L382 188 C381 193, 375 195, 368 195 C361 195, 355 193, 354 188 Z" fill="url(#cakeBody)" stroke="url(#goldGrad)" stroke-width="1.5"/>
+                    <!-- Infuso caldo nella tazza -->
+                    <ellipse cx="368" cy="166" rx="16" ry="2.5" fill="#C89B3C"/>
+                    <!-- Cartellino bustina/filtro -->
+                    <path d="M362 166 Q356 172 356 179" stroke="url(#goldGrad)" stroke-width="1" fill="none"/>
+                    <rect x="352" y="178" width="7" height="8" rx="1" fill="#264F36" stroke="url(#goldGrad)" stroke-width="0.8"/>
+
+                    <!-- Scintille dorate sparse -->
+                    <circle cx="95" cy="68" r="2" fill="#D9B15B" opacity="0.8"/>
+                    <circle cx="195" cy="62" r="2.5" fill="#F0DFB8" opacity="0.75"/>
+                    <circle cx="242" cy="88" r="1.8" fill="#D9B15B" opacity="0.7"/>
+                    <circle cx="348" cy="84" r="2" fill="#F0DFB8" opacity="0.75"/>
+                </svg>
+            </div>
+
+            <div class="pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ivory-200/60">
+                <p>© <span id="current-year"></span> <span id="copyright-bar-name">La Torteria</span> — Carta Digitale Tè & Tisane.</p>
+                <button onclick="toggleAdminMode()" class="text-ivory-200/75 hover:text-gold-400 underline underline-offset-4 transition-colors flex items-center gap-1.5 py-1">
+                    <i class="ph ph-lock-key"></i> Area Gestione / Modifica Listino
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================== MODALE: AGGIUNGI / MODIFICA REFERENZA (Bottom Sheet su Mobile) ==================== -->
+    <div id="edit-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-burgundy-900/75 backdrop-blur-sm">
+        <div class="bg-ivory-50 rounded-t-3xl sm:rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-5 sm:p-8 shadow-2xl border-t-2 sm:border-2 border-gold-500/40 relative">
+            <!-- Maniglia visiva mobile -->
+            <div class="w-10 h-1 bg-ivory-300 rounded-full mx-auto mb-3 sm:hidden"></div>
+
+            <button onclick="closeEditModal()" class="absolute top-4 right-4 sm:top-5 sm:right-5 w-10 h-10 rounded-full bg-ivory-200 hover:bg-ivory-300 active:scale-95 flex items-center justify-center text-burgundy-900" aria-label="Chiudi">
+                <i class="ph-bold ph-x text-lg"></i>
+            </button>
+
+            <h3 id="edit-modal-title" class="font-serif text-2xl sm:text-3xl font-bold text-burgundy-900 mb-4 sm:mb-5 pr-10">Modifica Referenza</h3>
+
+            <form id="tea-form" onsubmit="saveTeaForm(event)" class="space-y-3.5 sm:space-y-4">
+                <input type="hidden" id="tea-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Nome Tè / Tisana / Infuso *</label>
+                        <input type="text" id="tea-name" required placeholder="es. Special Jasmine" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Prezzo (€) *</label>
+                        <input type="text" id="tea-price" inputmode="decimal" required placeholder="es. 4,20" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Categoria *</label>
+                        <select id="tea-category" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                            <option value="Tè Verdi">Tè Verdi</option>
+                            <option value="Tè Neri">Tè Neri</option>
+                            <option value="Tè Bianchi & Oolong">Tè Bianchi & Oolong</option>
+                            <option value="Tisane">Tisane</option>
+                            <option value="Infusi alla Frutta">Infusi alla Frutta</option>
+                            <option value="Rooibos & Aromatizzati">Rooibos & Aromatizzati</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Etichetta Extra (Opzionale)</label>
+                        <input type="text" id="tea-badge" placeholder="es. Edizione Natale, Pregiato" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Ingredienti *</label>
+                    <input type="text" id="tea-ingredients" required placeholder="es. Tè verde cinese, fiori di gelsomino..." class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Descrizione *</label>
+                    <textarea id="tea-description" rows="2" required placeholder="Note aromatiche, profumo e caratteristiche..." class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 items-center">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Temperatura & Tempo *</label>
+                        <input type="text" id="tea-brewing" required placeholder="es. 95°C • 5-7 min" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                    </div>
+                    <div class="pt-1 sm:pt-5">
+                        <label class="inline-flex items-center gap-2.5 cursor-pointer select-none min-h-[40px]">
+                            <input type="checkbox" id="tea-caffeine-free" class="w-5 h-5 rounded border-ivory-300 text-pine-800 focus:ring-pine-700">
+                            <span class="text-sm font-semibold text-burgundy-900">Senza Teina (Naturalmente privo)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-ivory-200 pb-2 sm:pb-0">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 sm:flex-initial px-5 py-3 sm:py-2.5 rounded-xl border border-ivory-300 text-burgundy-900 text-sm font-semibold hover:bg-ivory-100">
+                        Annulla
+                    </button>
+                    <button type="submit" class="flex-1 sm:flex-initial px-6 py-3 sm:py-2.5 rounded-xl bg-burgundy-800 hover:bg-burgundy-900 text-ivory-50 text-sm font-semibold shadow-sm">
+                        Salva Modifiche
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODALE: IMPOSTAZIONI LOCALE ==================== -->
+    <div id="bar-settings-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-burgundy-900/75 backdrop-blur-sm">
+        <div class="bg-ivory-50 rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 sm:p-8 shadow-2xl border-t-2 sm:border-2 border-gold-500/40 relative">
+            <div class="w-10 h-1 bg-ivory-300 rounded-full mx-auto mb-3 sm:hidden"></div>
+            <button onclick="closeBarSettingsModal()" class="absolute top-4 right-4 sm:top-5 sm:right-5 w-10 h-10 rounded-full bg-ivory-200 hover:bg-ivory-300 flex items-center justify-center text-burgundy-900">
+                <i class="ph-bold ph-x text-lg"></i>
+            </button>
+
+            <h3 class="font-serif text-2xl sm:text-3xl font-bold text-burgundy-900 mb-1.5 pr-10">Informazioni Locale</h3>
+            <p class="text-xs sm:text-sm text-burgundy-900/70 mb-4">Personalizza intestazione, indirizzo e orari visualizzati sulla carta.</p>
+
+            <form onsubmit="saveBarSettings(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Nome del Locale</label>
+                    <input type="text" id="setting-bar-name" required class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Titolo Principale</label>
+                    <input type="text" id="setting-hero-title" required class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Indirizzo</label>
+                    <input type="text" id="setting-address" required class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-burgundy-900 mb-1">Orari di Apertura</label>
+                    <input type="text" id="setting-hours" required class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-ivory-300 focus:border-burgundy-800 outline-none text-base sm:text-sm">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-ivory-200 pb-2 sm:pb-0">
+                    <button type="button" onclick="closeBarSettingsModal()" class="flex-1 sm:flex-initial px-5 py-3 sm:py-2.5 rounded-xl border border-ivory-300 text-burgundy-900 text-sm font-semibold">Annulla</button>
+                    <button type="submit" class="flex-1 sm:flex-initial px-6 py-3 sm:py-2.5 rounded-xl bg-burgundy-800 hover:bg-burgundy-900 text-ivory-50 text-sm font-semibold">Salva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODALE CONFERMA (Senza alert/confirm nativi) ==================== -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-burgundy-900/75 backdrop-blur-sm">
+        <div class="bg-ivory-50 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-ivory-300 text-center">
+            <div class="w-12 h-12 rounded-full bg-burgundy-800/10 text-burgundy-800 flex items-center justify-center mx-auto mb-3">
+                <i class="ph-fill ph-warning-circle text-2xl"></i>
+            </div>
+            <h4 id="confirm-title" class="font-serif text-2xl font-bold text-burgundy-900 mb-2">Confermi?</h4>
+            <p id="confirm-message" class="text-sm text-burgundy-900/75 mb-6">L'operazione non può essere annullata.</p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-xl border border-ivory-300 text-burgundy-900 text-sm font-semibold hover:bg-ivory-100">Annulla</button>
+                <button id="confirm-action-btn" class="flex-1 py-2.5 rounded-xl bg-burgundy-800 hover:bg-burgundy-900 text-ivory-50 text-sm font-semibold">Conferma</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TOAST NOTIFICA ==================== -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-pine-900 text-ivory-50 px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-sm font-medium border border-gold-500/40">
+            <i class="ph-fill ph-check-circle text-gold-400 text-lg"></i>
+            <span id="toast-message">Operazione completata</span>
+        </div>
+    </div>
+
+    <!-- ==================== LOGICA APPLICAZIONE ==================== -->
+    <script>
+        // Nuove chiavi localStorage dedicate ai prezzi ufficiali della cassa
+        const STORAGE_KEY_TEAS = "la_torteria_teas_30_v6";
+        const STORAGE_KEY_INFO = "la_torteria_info_v2";
+
+        const DEFAULT_BAR_INFO = {
+            name: "La Torteria",
+            heroTitle: "Il calore delle feste in ogni tazza",
+            address: "Via delle Feste 12, Centro Storico",
+            hours: "Mar - Dom: 08:30 – 20:30"
+        };
+
+        // Tutte e 30 le referenze della cassa con i rispettivi prezzi e ingredienti
+        const DEFAULT_TEAS = [
+            // --- TÈ VERDI (6) ---
+            {
+                id: "tea-01",
+                name: "Special Jasmine",
+                category: "Tè Verdi",
+                ingredients: "Tè verde cinese in foglia, fiori interi di gelsomino profumati naturalmente.",
+                description: "Un grande classico orientale dall'aroma floreale inebriante e vellutato, dolce e delicato al palato.",
+                brewing: "80°C • 2-3 min",
+                price: "4,00",
+                caffeineFree: false,
+                badge: "Floreale"
+            },
+            {
+                id: "tea-02",
+                name: "Special Gunpowder",
+                category: "Tè Verdi",
+                ingredients: "Tè verde cinese dalle foglie arrotolate a piccole perle.",
+                description: "Dal gusto intenso, fresco e leggermente affumicato, sprigiona tutto il suo carattere man mano che le perle si schiudono.",
+                brewing: "80°C • 2-3 min",
+                price: "4,00",
+                caffeineFree: false,
+                badge: "Classico"
+            },
+            {
+                id: "tea-03",
+                name: "Marrakech Mint Tea",
+                category: "Tè Verdi",
+                ingredients: "Tè verde Gunpowder, foglie di menta piperita e menta nanah.",
+                description: "Il celebre tè alla menta della tradizione marocchina: rinfrescante, dissetante e ideale anche dopo i pasti.",
+                brewing: "80°C • 3 min",
+                price: "4,00",
+                caffeineFree: false,
+                badge: "Rinfrescante"
+            },
+            {
+                id: "tea-04",
+                name: "Ginger e Melograno",
+                category: "Tè Verdi",
+                ingredients: "Tè verde, radice di zenzero, arilli di melograno essiccati, scorze d'arancia, petali di fiori.",
+                description: "Un incontro vivace e armonioso tra la nota piccante dello zenzero e la dolcezza acidula del melograno.",
+                brewing: "80°C • 2-3 min",
+                price: "4,00",
+                caffeineFree: false,
+                badge: ""
+            },
+            {
+                id: "tea-05",
+                name: "Romeo e Giulietta",
+                category: "Tè Verdi",
+                ingredients: "Tè verde, boccioli di rosa, pezzetti di fragola e papaya, fiori di fiordaliso e girasole.",
+                description: "Miscela romantica e profumata dalle note dolci di frutti rossi e petali di rosa, leggera e avvolgente.",
+                brewing: "80°C • 2-3 min",
+                price: "5,00",
+                caffeineFree: false,
+                badge: "Aromatico"
+            },
+            {
+                id: "tea-06",
+                name: "Sencha Special Fine",
+                category: "Tè Verdi",
+                ingredients: "Pregiato tè verde giapponese Sencha cotto a vapore.",
+                description: "Infuso verde smeraldo brillante dal profilo erbaceo, fresco e cristallino, ricco di antiossidanti naturali.",
+                brewing: "75°C • 2 min",
+                price: "8,00",
+                caffeineFree: false,
+                badge: "Pregiato"
+            },
+
+            // --- TÈ NERI (6) ---
+            {
+                id: "tea-13-b",
+                name: "Earl Grey Imperiale",
+                category: "Tè Neri",
+                ingredients: "Tè nero cinese e di Ceylon, olio essenziale naturale di bergamotto, petali di fiordaliso.",
+                description: "Elegante e agrumato, arricchito da pregiato olio essenziale di bergamotto calabrese e petali blu di fiordaliso.",
+                brewing: "95°C • 3-4 min",
+                price: "5,00",
+                caffeineFree: false,
+                badge: "Iconico"
+            },
+            {
+                id: "tea-14-b",
+                name: "English Breakfast",
+                category: "Tè Neri",
+                ingredients: "Pregiata miscela di tè neri Assam, Ceylon e Kenya.",
+                description: "Il grande classico della tradizione anglosassone: corposo, maltato e avvolgente, perfetto anche con una nuvola di latte.",
+                brewing: "95°C • 3-4 min",
+                price: "4,00",
+                caffeineFree: false,
+                badge: "Classico"
+            },
+            {
+                id: "tea-15-b",
+                name: "Chai India",
+                category: "Tè Neri",
+                ingredients: "Tè nero Assam, cannella in corteccia, semi di cardamomo, zenzero, chiodi di garofano, pepe nero.",
+                description: "Speziato, caldo e avvolgente secondo l'antica ricetta indiana, ideale per le giornate fredde e le feste natalizie.",
+                brewing: "95°C • 4-5 min",
+                price: "4,00",
+                caffeineFree: false,
+                badge: "Speziato"
+            },
+            {
+                id: "tea-09",
+                name: "Darjeeling FTGFOP",
+                category: "Tè Neri",
+                ingredients: "Tè nero indiano Darjeeling FTGFOP (Finest Tippy Golden Flowery Orange Pekoe).",
+                description: "Noto come lo champagne dei tè, raccolto alle pendici dell'Himalaya con raffinate note floreali e di uva moscato.",
+                brewing: "90°C • 3 min",
+                price: "4,00",
+                caffeineFree: false,
+                badge: "Gran Cru"
+            },
+            {
+                id: "tea-10",
+                name: "Lapsang Souchong",
+                category: "Tè Neri",
+                ingredients: "Tè nero cinese affumicato tradizionalmente su legno di pino.",
+                description: "Dal carattere unico e inconfondibile, con intense note calde di legno affumicato e camino acceso.",
+                brewing: "95°C • 3-4 min",
+                price: "4,00",
+                caffeineFree: false,
+                badge: "Affumicato"
+            },
+            {
+                id: "tea-12",
+                name: "Tatjana",
+                category: "Tè Neri",
+                ingredients: "Tè nero, scorze d'arancia e limone, cannella, chiodi di garofano, aromi naturali in stile russo.",
+                description: "Miscela d'ispirazione imperiale dal profumo caldo di agrumi invernali e spezie dolci.",
+                brewing: "95°C • 3-4 min",
+                price: "4,00",
+                caffeineFree: false,
+                badge: "Invernale"
+            },
+
+            // --- TÈ BIANCHI & OOLONG (3) ---
+            {
+                id: "tea-13",
+                name: "Pai Mu Tan White Peony",
+                category: "Tè Bianchi & Oolong",
+                ingredients: "Tè bianco cinese del Fujian composto da gemme argentate e giovani foglie.",
+                description: "Estremamente delicato, setoso e naturalmente dolce, con sentori di fiori bianchi e miele leggero.",
+                brewing: "75°C • 3-4 min",
+                price: "9,00",
+                caffeineFree: false,
+                badge: "Tè Bianco"
+            },
+            {
+                id: "tea-14",
+                name: "Lu Yu",
+                category: "Tè Bianchi & Oolong",
+                ingredients: "Tè semiossidato Oolong, petali di fiori d'arancio e gelsomino, note fruttate naturali.",
+                description: "Dedicato al celebre maestro del tè, un Oolong morbido ed equilibrato dalle sfumature floreali e vellutate.",
+                brewing: "85°C • 3-4 min",
+                price: "6,00",
+                caffeineFree: false,
+                badge: "Oolong"
+            },
+            {
+                id: "tea-15",
+                name: "Taiwan Cinnamon Oolong",
+                category: "Tè Bianchi & Oolong",
+                ingredients: "Pregiato tè semiossidato Oolong di Taiwan, pezzetti di cannella, aromi naturali speziati.",
+                description: "La rotondità cremosa del pregiato Oolong di Taiwan avvolta dal profumo caldo e dolce della cannella.",
+                brewing: "85°C • 3-4 min",
+                price: "12,00",
+                caffeineFree: false,
+                badge: "Oolong Pregiato"
+            },
+
+            // --- TISANE (8 - Tutte Senza Teina) ---
+            {
+                id: "tea-16",
+                name: "Ginger Lemon",
+                category: "Tisane",
+                ingredients: "Radice di zenzero essiccata, scorze di limone, citronella, radice di liquirizia, menta piperita.",
+                description: "Infuso vivace, agrumato e tonificante che unisce il calore piccante dello zenzero alla freschezza del limone.",
+                brewing: "95°C • 6-8 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: "Tonificante"
+            },
+            {
+                id: "tea-17",
+                name: "Camomilla Fiori",
+                category: "Tisane",
+                ingredients: "Fiori interi selezionati di camomilla matricaria.",
+                description: "Fiori interi essiccati lentamente per preservare gli oli essenziali: infuso dorato, dolce e profondamente distensivo.",
+                brewing: "95°C • 5-7 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: "Fiori Interi"
+            },
+            {
+                id: "tea-19",
+                name: "Finocchio Liquirizia",
+                category: "Tisane",
+                ingredients: "Semi di finocchio dolce, radice di liquirizia, anice stellato.",
+                description: "Tisana digestiva dall'aroma avvolgente e naturalmente dolce, ideale per concludere con leggerezza il pasto.",
+                brewing: "95°C • 6-8 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: "Digestiva"
+            },
+            {
+                id: "tea-22",
+                name: "Rosa Canina e Mirtillo",
+                category: "Tisane",
+                ingredients: "Bacche di rosa canina, mirtilli neri essiccati, fiori di ibisco, foglie di rovo.",
+                description: "Ricca di vitamina C naturale, dal colore rosso intenso e dal gusto piacevolmente acidulo e fruttato.",
+                brewing: "95°C • 6-8 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: ""
+            },
+            {
+                id: "tea-24",
+                name: "Relaxing",
+                category: "Tisane",
+                ingredients: "Melissa, passiflora, fiori di camomilla, tiglio, lavanda e foglie d'arancio.",
+                description: "Armonia di erbe officinali distensive per rallentare i ritmi della giornata e ritrovare calma e serenità.",
+                brewing: "95°C • 5-7 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: "Rilassante"
+            },
+            {
+                id: "tea-25",
+                name: "Dolce Attesa",
+                category: "Tisane",
+                ingredients: "Rooibos, finocchio, melissa, fiori di camomilla, scorze d'arancia dolce, foglie di lampone.",
+                description: "Tisana gentile, profumata e priva di caffeina, formulata per accompagnare con dolcezza ogni momento di pausa.",
+                brewing: "95°C • 6 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: "Delicata"
+            },
+            {
+                id: "tea-28",
+                name: "Purity",
+                category: "Tisane",
+                ingredients: "Foglie di betulla, ortica, tarassaco, citronella, menta piperita e fiori di sambuco.",
+                description: "Infuso erbaceo, fresco e balsamico pensato per depurare e donare una piacevole sensazione di benessere.",
+                brewing: "95°C • 6 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: "Depurativa"
+            },
+            {
+                id: "tea-30",
+                name: "Curcuma e Fiori di Sambuco",
+                category: "Tisane",
+                ingredients: "Radice di curcuma, fiori di sambuco, zenzero, scorze di limone, pepe nero.",
+                description: "Tisana dorata dal carattere speziato-floreale, dove il calore della curcuma incontra la dolcezza del sambuco.",
+                brewing: "95°C • 6-8 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: ""
+            },
+
+            // --- INFUSI ALLA FRUTTA (5 - Tutti Senza Teina) ---
+            {
+                id: "tea-18",
+                name: "Frutti di Bosco",
+                category: "Infusi alla Frutta",
+                ingredients: "Fiori di ibisco, mirtilli neri, lamponi, more, ribes nero, sambuco, pezzi di mela.",
+                description: "Un grande classico ricco di frutti rossi interi dal colore rubino brillante e dal gusto pieno e dissetante.",
+                brewing: "95°C • 7-8 min",
+                price: "5,00",
+                caffeineFree: true,
+                badge: ""
+            },
+            {
+                id: "tea-20",
+                name: "Arancio Cannella Vaniglia",
+                category: "Infusi alla Frutta",
+                ingredients: "Pezzi di mela, scorze d'arancia, stecche di cannella, bacche di vaniglia Bourbon, ibisco, mandorle a lamelle.",
+                description: "Il profumo del Natale in tazza: dolce, speziato e avvolgente come un dolce appena sfornato.",
+                brewing: "95°C • 7-8 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: "Speciale Natale"
+            },
+            {
+                id: "tea-23",
+                name: "Sogno d'Amore",
+                category: "Infusi alla Frutta",
+                ingredients: "Pezzi di mela, ibisco, rosa canina, fragole, lamponi, petali di rosa, cuoricini di zucchero.",
+                description: "Goloso, profumato e vellutato, con note dolci di fragola e lampone impreziosite da petali di rosa.",
+                brewing: "95°C • 7-8 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: ""
+            },
+            {
+                id: "tea-26",
+                name: "Mirtillo Ciliegia Extra",
+                category: "Infusi alla Frutta",
+                ingredients: "Fiori di ibisco, ciliegie denocciolate, mirtilli neri, uva passa, pezzi di mela, aromi naturali.",
+                description: "Intenso e succoso, unisce la rotondità delle ciliegie mature alle note profonde dei mirtilli neri.",
+                brewing: "95°C • 7-8 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: ""
+            },
+            {
+                id: "tea-27",
+                name: "Mango Pesca Ginger",
+                category: "Infusi alla Frutta",
+                ingredients: "Cubetti di mango, pezzi di pesca, radice di zenzero, pezzi di mela, ibisco bianco, citronella.",
+                description: "Sinfonia esotica e solare in cui la dolcezza vellutata di mango e pesca è ravvivata da un tocco di zenzero.",
+                brewing: "95°C • 7-8 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: ""
+            },
+
+            // --- ROOIBOS & AROMATIZZATI (2 - Tutti Senza Teina) ---
+            {
+                id: "tea-21",
+                name: "Rooibos",
+                category: "Rooibos & Aromatizzati",
+                ingredients: "Foglie pure di Rooibos rosso sudafricano (Aspalathus linearis).",
+                description: "Infuso rosso ambrato originario del Sudafrica, naturalmente privo di teina, morbido e leggermente nocciolato.",
+                brewing: "95°C • 5-7 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: "Puro"
+            },
+            {
+                id: "tea-29",
+                name: "Rooibos Marron Glacé",
+                category: "Rooibos & Aromatizzati",
+                ingredients: "Rooibos rosso sudafricano, pezzetti di castagna candita, bacche di vaniglia, fave di cacao, aromi naturali.",
+                description: "Una coccola invernale golosa e avvolgente al profumo di castagne glassate e vaniglia, perfetta accanto a una fetta di torta.",
+                brewing: "95°C • 5-7 min",
+                price: "4,00",
+                caffeineFree: true,
+                badge: "Speciale Natale"
+            }
+        ];
+
+        const CATEGORIES = [
+            { id: "Tutte", label: "Tutte", icon: "ph-squares-four" },
+            { id: "Tè Verdi", label: "Tè Verdi", icon: "ph-leaf" },
+            { id: "Tè Neri", label: "Tè Neri", icon: "ph-coffee" },
+            { id: "Tè Bianchi & Oolong", label: "Tè Bianchi & Oolong", icon: "ph-flower-lotus" },
+            { id: "Tisane", label: "Tisane", icon: "ph-plant" },
+            { id: "Infusi alla Frutta", label: "Infusi alla Frutta", icon: "ph-cherries" },
+            { id: "Rooibos & Aromatizzati", label: "Rooibos & Aromatizzati", icon: "ph-sparkle" }
+        ];
+
+        // --- STATO ---
+        let teas = [];
+        let barInfo = {};
+        let activeCategory = "Tutte";
+        let searchQuery = "";
+        let isAdminMode = false;
+
+        // --- AVVIO ---
+        window.addEventListener("DOMContentLoaded", () => {
+            loadFromStorage();
+            document.getElementById("current-year").textContent = new Date().getFullYear();
+            applyBarInfoToUI();
+            renderCategoryFilters();
+            renderMenu();
+            initSnowEffect();
+        });
+
+        function loadFromStorage() {
+            try {
+                const savedTeas = localStorage.getItem(STORAGE_KEY_TEAS);
+                const savedInfo = localStorage.getItem(STORAGE_KEY_INFO);
+                teas = savedTeas ? JSON.parse(savedTeas) : [...DEFAULT_TEAS];
+                barInfo = savedInfo ? JSON.parse(savedInfo) : { ...DEFAULT_BAR_INFO };
+            } catch (e) {
+                teas = [...DEFAULT_TEAS];
+                barInfo = { ...DEFAULT_BAR_INFO };
+            }
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY_TEAS, JSON.stringify(teas));
+                localStorage.setItem(STORAGE_KEY_INFO, JSON.stringify(barInfo));
+            } catch (e) {
+                showToast("Errore nel salvataggio locale.");
+            }
+        }
+
+        function applyBarInfoToUI() {
+            document.title = `${barInfo.name} — Carta Natalizia di Tè e Tisane`;
+            document.getElementById("header-bar-name").textContent = barInfo.name;
+            document.getElementById("copyright-bar-name").textContent = barInfo.name;
+            document.getElementById("hero-title").textContent = barInfo.heroTitle;
+        }
+
+        // --- FILTRI & RICERCA ---
+        function setCategory(catId) {
+            activeCategory = catId;
+            renderCategoryFilters();
+            renderMenu();
+        }
+
+        function renderCategoryFilters() {
+            const container = document.getElementById("category-filters");
+            container.innerHTML = CATEGORIES.map(cat => {
+                const isActive = activeCategory === cat.id;
+                const count = cat.id === "Tutte" 
+                    ? teas.length 
+                    : teas.filter(t => t.category === cat.id).length;
+
+                return `
+                    <button 
+                        onclick="setCategory('${cat.id}')"
+                        class="inline-flex items-center gap-1.5 min-h-[32px] px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 active:scale-95 transition-all ${
+                            isActive 
+                            ? 'bg-burgundy-800 text-ivory-50 shadow-sm border border-gold-500/40' 
+                            : 'bg-white text-burgundy-900 border border-ivory-300 hover:border-burgundy-700 hover:bg-ivory-100'
+                        }"
+                    >
+                        <i class="ph ${cat.icon} text-sm ${isActive ? 'text-gold-400' : 'text-burgundy-700'}"></i>
+                        <span>${cat.label}</span>
+                        <span class="text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-burgundy-900 text-gold-400' : 'bg-ivory-200 text-burgundy-800'}">${count}</span>
+                    </button>
+                `;
+            }).join("");
+        }
+
+        function handleSearch(val) {
+            searchQuery = val.trim().toLowerCase();
+            document.getElementById("clear-search").classList.toggle("hidden", searchQuery === "");
+            renderMenu();
+        }
+
+        function clearSearch() {
+            const input = document.getElementById("search-input");
+            input.value = "";
+            handleSearch("");
+        }
+
+        function resetAllFilters() {
+            activeCategory = "Tutte";
+            document.getElementById("filter-caffeine-free").checked = false;
+            clearSearch();
+            renderCategoryFilters();
+            renderMenu();
+        }
+
+        // --- RENDER MENU ---
+        function renderMenu() {
+            const onlyCaffeineFree = document.getElementById("filter-caffeine-free").checked;
+
+            const filtered = teas.filter(tea => {
+                const matchesCat = activeCategory === "Tutte" || tea.category === activeCategory;
+                const matchesCaffeine = !onlyCaffeineFree || tea.caffeineFree;
+                const matchesSearch = !searchQuery || 
+                    tea.name.toLowerCase().includes(searchQuery) ||
+                    tea.ingredients.toLowerCase().includes(searchQuery) ||
+                    tea.description.toLowerCase().includes(searchQuery) ||
+                    tea.category.toLowerCase().includes(searchQuery);
+                return matchesCat && matchesCaffeine && matchesSearch;
+            });
+
+            const grid = document.getElementById("tea-grid");
+            const emptyState = document.getElementById("empty-state");
+            const countLabel = document.getElementById("results-count");
+
+            countLabel.textContent = filtered.length === 1 
+                ? "Mostrando 1 referenza" 
+                : `Mostrando ${filtered.length} referenze`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = "";
+                emptyState.classList.remove("hidden");
+                return;
+            }
+
+            emptyState.classList.add("hidden");
+
+            const catColors = {
+                "Tè Verdi": "bg-pine-100 text-pine-900 border-pine-700/20",
+                "Tè Neri": "bg-burgundy-800/10 text-burgundy-900 border-burgundy-800/20",
+                "Tè Bianchi & Oolong": "bg-amber-100/80 text-amber-900 border-amber-400/30",
+                "Tisane": "bg-emerald-50 text-emerald-900 border-emerald-600/20",
+                "Infusi alla Frutta": "bg-rose-100/80 text-rose-900 border-rose-400/30",
+                "Rooibos & Aromatizzati": "bg-gold-100 text-burgundy-900 border-gold-500/40"
+            };
+
+            grid.innerHTML = filtered.map(tea => {
+                const badgeStyle = catColors[tea.category] || "bg-ivory-200 text-burgundy-900 border-ivory-300";
+
+                return `
+                <article class="bg-white rounded-2xl p-3.5 sm:p-5 border border-ivory-300/90 shadow-sm hover:shadow-md hover:border-gold-500/60 transition-all flex flex-col justify-between relative group">
+                    <div>
+                        <!-- Top: Categoria + Badge + Prezzo -->
+                        <div class="flex items-start justify-between gap-2 mb-2">
+                            <div class="flex flex-wrap items-center gap-1">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold border ${badgeStyle}">
+                                    ${escapeHTML(tea.category)}
+                                </span>
+                                ${tea.badge ? `
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold-100 text-burgundy-900 border border-gold-400/50">
+                                        ${escapeHTML(tea.badge)}
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <span class="font-serif text-lg sm:text-xl font-bold text-burgundy-900 shrink-0 leading-none">
+                                € ${escapeHTML(tea.price)}
+                            </span>
+                        </div>
+
+                        <!-- Nome -->
+                        <h3 class="font-serif text-lg sm:text-xl font-bold text-burgundy-900 leading-snug mb-1.5 group-hover:text-burgundy-700 transition-colors">
+                            ${escapeHTML(tea.name)}
+                        </h3>
+
+                        <!-- Ingredienti in evidenza -->
+                        <div class="bg-ivory-100/90 border border-ivory-300/80 rounded-xl px-2.5 py-2 mb-2">
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-pine-800 flex items-center gap-1 mb-0.5">
+                                <i class="ph-fill ph-plant"></i> Ingredienti
+                            </span>
+                            <p class="text-[11px] sm:text-xs font-medium text-burgundy-900/90 leading-snug">
+                                ${escapeHTML(tea.ingredients)}
+                            </p>
+                        </div>
+
+                        <!-- Descrizione -->
+                        <p class="text-xs text-burgundy-900/75 leading-relaxed mb-3">
+                            ${escapeHTML(tea.description)}
+                        </p>
+                    </div>
+
+                    <!-- Footer Card: Infusione & Senza Teina -->
+                    <div>
+                        <div class="pt-2.5 border-t border-ivory-200 flex items-center justify-between text-[11px]">
+                            <span class="inline-flex items-center gap-1 font-semibold text-burgundy-800">
+                    <!-- Footer Card: Senza Teina -->
+                    <div>
+                        <div class="pt-2.5 border-t border-ivory-200 flex items-center justify-end text-[11px]">
+                            ${tea.caffeineFree 
+                                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pine-50 text-pine-800 border border-pine-200 font-bold"><i class="ph-fill ph-check-circle"></i> Senza teina</span>`
+                                : `<span class="inline-flex items-center gap-1 text-burgundy-800/65 font-medium"><i class="ph-fill ph-leaf"></i> Con teina</span>`
+                            }
+                        </div>
+
+                        <!-- Controlli rapidi per Smartphone & Desktop in Area Gestione -->
+                        ${isAdminMode ? `
+                            <div class="mt-2.5 pt-2.5 border-t border-dashed border-ivory-300 flex items-center gap-1.5">
+                                <div class="flex items-center bg-ivory-100 rounded-lg border border-ivory-300 overflow-hidden shrink-0">
+                                    <button onclick="adjustPrice('${tea.id}', -0.10)" class="w-8 h-8 flex items-center justify-center text-burgundy-900 hover:bg-ivory-200 active:bg-ivory-300 font-bold text-xs" title="Riduci prezzo di 0,10€" aria-label="Diminuisci prezzo">-0,10</button>
+                                    <span class="px-1 text-[10px] font-bold text-burgundy-900">€</span>
+                                    <button onclick="adjustPrice('${tea.id}', 0.10)" class="w-8 h-8 flex items-center justify-center text-burgundy-900 hover:bg-ivory-200 active:bg-ivory-300 font-bold text-xs" title="Aumenta prezzo di 0,10€" aria-label="Aumenta prezzo">+0,10</button>
+                                </div>
+                                <button onclick="openEditModal('${tea.id}')" class="flex-1 min-h-[32px] py-1.5 px-2.5 rounded-lg bg-burgundy-800 hover:bg-burgundy-900 active:scale-95 text-ivory-50 text-xs font-bold flex items-center justify-center gap-1 transition-all">
+                                    <i class="ph-bold ph-pencil-simple"></i> Modifica
+                                </button>
+                                <button onclick="confirmDeleteTea('${tea.id}')" class="min-h-[32px] min-w-[32px] rounded-lg bg-red-50 hover:bg-red-100 active:scale-95 text-red-700 text-xs font-bold flex items-center justify-center transition-all" title="Elimina" aria-label="Elimina">
+                                    <i class="ph-bold ph-trash text-sm"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </article>
+                `;
+            }).join("");
+        }
+
+        // --- AREA GESTIONE ---
+        function toggleAdminMode() {
+            isAdminMode = !isAdminMode;
+            const banner = document.getElementById("admin-banner");
+            const fab = document.getElementById("mobile-fab-add");
+            if (isAdminMode) {
+                banner.classList.remove("hidden");
+                fab.classList.remove("hidden");
+                fab.classList.add("flex");
+                showToast("Area Gestione attivata");
+            } else {
+                banner.classList.add("hidden");
+                fab.classList.add("hidden");
+                fab.classList.remove("flex");
+            }
+            renderMenu();
+        }
+
+        function adjustPrice(teaId, delta) {
+            const tea = teas.find(t => t.id === teaId);
+            if (!tea) return;
+            const numeric = parseFloat(String(tea.price).replace(",", "."));
+            if (isNaN(numeric)) return;
+            const updated = Math.max(0, numeric + delta);
+            tea.price = updated.toFixed(2).replace(".", ",");
+            saveToStorage();
+            renderMenu();
+        }
+
+        function openEditModal(teaId = null) {
+            const modal = document.getElementById("edit-modal");
+            const title = document.getElementById("edit-modal-title");
+            const form = document.getElementById("tea-form");
+            form.reset();
+
+            if (teaId) {
+                const tea = teas.find(t => t.id === teaId);
+                if (!tea) return;
+                title.textContent = "Modifica Referenza";
+                document.getElementById("tea-id").value = tea.id;
+                document.getElementById("tea-name").value = tea.name;
+                document.getElementById("tea-price").value = tea.price;
+                document.getElementById("tea-category").value = tea.category;
+                document.getElementById("tea-badge").value = tea.badge || "";
+                document.getElementById("tea-ingredients").value = tea.ingredients;
+                document.getElementById("tea-description").value = tea.description;
+                document.getElementById("tea-brewing").value = tea.brewing;
+                document.getElementById("tea-caffeine-free").checked = tea.caffeineFree;
+            } else {
+                title.textContent = "Aggiungi Nuova Voce";
+                document.getElementById("tea-id").value = "";
+                document.getElementById("tea-brewing").value = "95°C • 5-7 min";
+                document.getElementById("tea-caffeine-free").checked = true;
+            }
+
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById("edit-modal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
+        function saveTeaForm(event) {
+            event.preventDefault();
+            const id = document.getElementById("tea-id").value;
+            const teaData = {
+                id: id || "tea-" + Date.now(),
+                name: document.getElementById("tea-name").value.trim(),
+                price: document.getElementById("tea-price").value.trim().replace("€", "").trim(),
+                category: document.getElementById("tea-category").value,
+                badge: document.getElementById("tea-badge").value.trim(),
+                ingredients: document.getElementById("tea-ingredients").value.trim(),
+                description: document.getElementById("tea-description").value.trim(),
+                brewing: document.getElementById("tea-brewing").value.trim(),
+                caffeineFree: document.getElementById("tea-caffeine-free").checked
+            };
+
+            if (id) {
+                const index = teas.findIndex(t => t.id === id);
+                if (index !== -1) teas[index] = teaData;
+                showToast("Referenza aggiornata");
+            } else {
+                teas.unshift(teaData);
+                showToast("Nuova referenza aggiunta");
+            }
+
+            saveToStorage();
+            closeEditModal();
+            renderCategoryFilters();
+            renderMenu();
+        }
+
+        function confirmDeleteTea(teaId) {
+            const tea = teas.find(t => t.id === teaId);
+            if (!tea) return;
+            openConfirmModal(
+                "Eliminare questa voce?",
+                `Stai per rimuovere "${tea.name}" dalla carta.`,
+                () => {
+                    teas = teas.filter(t => t.id !== teaId);
+                    saveToStorage();
+                    renderCategoryFilters();
+                    renderMenu();
+                    showToast("Voce eliminata");
+                }
+            );
+        }
+
+        function confirmResetMenu() {
+            openConfirmModal(
+                "Ripristinare le 30 referenze?",
+                "Verranno ricaricati tutti e 30 i tè, tisane e infusi con i rispettivi prezzi e ingredienti.",
+                () => {
+                    teas = [...DEFAULT_TEAS];
+                    saveToStorage();
+                    renderCategoryFilters();
+                    renderMenu();
+                    showToast("Listino originale ripristinato");
+                }
+            );
+        }
+
+        function openConfirmModal(title, message, onConfirmCallback) {
+            document.getElementById("confirm-title").textContent = title;
+            document.getElementById("confirm-message").textContent = message;
+            const btn = document.getElementById("confirm-action-btn");
+            btn.onclick = () => {
+                onConfirmCallback();
+                closeConfirmModal();
+            };
+            const modal = document.getElementById("confirm-modal");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById("confirm-modal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
+        // --- IMPOSTAZIONI LOCALE ---
+        function openBarSettingsModal() {
+            document.getElementById("setting-bar-name").value = barInfo.name;
+            document.getElementById("setting-hero-title").value = barInfo.heroTitle;
+            document.getElementById("setting-address").value = barInfo.address;
+            document.getElementById("setting-hours").value = barInfo.hours;
+
+            const modal = document.getElementById("bar-settings-modal");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function closeBarSettingsModal() {
+            const modal = document.getElementById("bar-settings-modal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
+        function saveBarSettings(event) {
+            event.preventDefault();
+            barInfo.name = document.getElementById("setting-bar-name").value.trim();
+            barInfo.heroTitle = document.getElementById("setting-hero-title").value.trim();
+            barInfo.address = document.getElementById("setting-address").value.trim();
+            barInfo.hours = document.getElementById("setting-hours").value.trim();
+
+            saveToStorage();
+            applyBarInfoToUI();
+            closeBarSettingsModal();
+            showToast("Informazioni locale salvate");
+        }
+
+        // --- EXPORT / IMPORT JSON ---
+        function exportMenuJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ barInfo, teas }, null, 2));
+            const a = document.createElement("a");
+            a.setAttribute("href", dataStr);
+            a.setAttribute("download", "la-torteria-carta-te-tisane.json");
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast("Backup JSON scaricato");
+        }
+
+        function importMenuJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (Array.isArray(parsed.teas)) {
+                        teas = parsed.teas;
+                        if (parsed.barInfo) barInfo = { ...barInfo, ...parsed.barInfo };
+                        saveToStorage();
+                        applyBarInfoToUI();
+                        renderCategoryFilters();
+                        renderMenu();
+                        showToast("Listino importato con successo");
+                    } else {
+                        showToast("Formato file non valido");
+                    }
+                } catch (err) {
+                    showToast("Errore durante l'importazione");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = "";
+        }
+
+        // --- ANIMAZIONE LEGGERA NEVE & SCINTILLE ---
+        function initSnowEffect() {
+            const canvas = document.getElementById("snow-canvas");
+            if (!canvas) return;
+            const ctx = canvas.getContext("2d");
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+
+            window.addEventListener("resize", () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+
+            const particles = Array.from({ length: 35 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: Math.random() * 2.2 + 0.8,
+                speedY: Math.random() * 0.45 + 0.15,
+                speedX: (Math.random() - 0.5) * 0.25,
+                isGold: Math.random() > 0.45,
+                alpha: Math.random() * 0.45 + 0.15
+            }));
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                for (const p of particles) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = p.isGold 
+                        ? `rgba(200, 155, 60, ${p.alpha})` 
+                        : `rgba(255, 255, 255, ${p.alpha + 0.2})`;
+                    ctx.fill();
+
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+
+                    if (p.y > height) {
+                        p.y = -5;
+                        p.x = Math.random() * width;
+                    }
+                    if (p.x > width) p.x = 0;
+                    if (p.x < 0) p.x = width;
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // --- UTILITIES ---
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toast-message").textContent = msg;
+            toast.classList.remove("translate-y-20", "opacity-0");
+            setTimeout(() => {
+                toast.classList.add("translate-y-20", "opacity-0");
+            }, 3000);
+        }
+
+        function escapeHTML(str) {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body>
+</html>
